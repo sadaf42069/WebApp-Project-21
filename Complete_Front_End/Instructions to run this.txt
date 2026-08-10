@@ -1,0 +1,12 @@
+1. Install Node.js 22 or newer.
+2. Open this folder in VS Code.
+3. Open the integrated terminal.
+4. Run: npm.cmd install
+5. Run: npm.cmd run dev
+6. Open: http://localhost:8443
+
+Initial admin login:
+Email: admin@navana.com
+Password: Admin@123
+
+The dev command starts both the React frontend and the Node.js backend.

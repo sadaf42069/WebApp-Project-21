@@ -1,0 +1,11 @@
+.env
+.env.*
+.git
+.vercel
+dist
+node_modules
+server/data/database.json
+server/data/*.tmp
+server/tests
+tsconfig.tsbuildinfo
+Instructions to run this.txt
