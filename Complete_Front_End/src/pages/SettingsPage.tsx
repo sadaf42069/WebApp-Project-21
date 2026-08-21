@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
-import { Database, Languages, RotateCcw, ShieldCheck, Smartphone } from 'lucide-react'
+import { Database, Languages, RotateCcw, ShieldCheck, Smartphone, X } from 'lucide-react'
 import { errorMessage } from '../api'
 import AdminLayout from '../components/AdminLayout'
+import Modal from '../components/Modal'
 import type { Page } from '../types'
 
 interface SettingsPageProps {
@@ -12,14 +13,21 @@ interface SettingsPageProps {
 
 export default function SettingsPage({ navigate, resetDemoData }: SettingsPageProps) {
   const [resetting, setResetting] = useState(false)
+  const [confirmReset, setConfirmReset] = useState(false)
+  const [message, setMessage] = useState('')
+  const [messageIsError, setMessageIsError] = useState(false)
 
   const reset = async () => {
     setResetting(true)
+    setMessage('')
     try {
       await resetDemoData()
-      alert('Demo shop and tenant data has been restored on the server.')
+      setMessage('Demo shop and tenant data has been restored on the server.')
+      setMessageIsError(false)
+      setConfirmReset(false)
     } catch (resetError) {
-      alert(errorMessage(resetError))
+      setMessage(errorMessage(resetError))
+      setMessageIsError(true)
     } finally {
       setResetting(false)
     }
@@ -30,12 +38,12 @@ export default function SettingsPage({ navigate, resetDemoData }: SettingsPagePr
       <section className="grid grid-2 gap-20">
         <div className="card" style={{ padding: 24 }}>
           <h2 className="font-display" style={{ margin: 0, fontWeight: 900 }}>System Preferences</h2>
-          <p className="page-subtitle">Prototype settings for the first version of the web application.</p>
+          <p className="page-subtitle">Security, data, and localization preferences for this deployment.</p>
 
           <div className="grid gap-16 mt-6">
-            <SettingItem icon={<ShieldCheck size={20} />} title="Role-based access" desc="Admin and management pages require login in the final system." enabled />
+            <SettingItem icon={<ShieldCheck size={20} />} title="Role-based access" desc="Admin and management pages require an authenticated administrator." enabled />
             <SettingItem icon={<Smartphone size={20} />} title="Mobile-friendly interface" desc="Customers can search shops and view maps from mobile devices." enabled />
-            <SettingItem icon={<Languages size={20} />} title="Bangla language support" desc="Suggested as a future improvement after the first version." />
+            <SettingItem icon={<Languages size={20} />} title="Bangla language support" desc="Planned for a future localized release." />
             <SettingItem icon={<Database size={20} />} title="Server data storage" desc="Changes are persisted by the Node.js API instead of browser localStorage." enabled />
           </div>
         </div>
@@ -51,9 +59,11 @@ export default function SettingsPage({ navigate, resetDemoData }: SettingsPagePr
             </p>
           </div>
 
-          <button className="btn btn-danger mt-6" disabled={resetting} onClick={() => void reset()}>
-            <RotateCcw size={16} /> {resetting ? 'Resetting…' : 'Reset Demo Data'}
+          <button className="btn btn-danger mt-6" disabled={resetting} onClick={() => setConfirmReset(true)}>
+            <RotateCcw size={16} /> Reset Demo Data
           </button>
+
+          {message && <p role={messageIsError ? 'alert' : 'status'} aria-live={messageIsError ? 'assertive' : 'polite'} className={`pill ${messageIsError ? 'pill-danger' : 'pill-success'} mt-5`}>{message}</p>}
 
           <div className="mt-6">
             <h3 className="font-display" style={{ fontWeight: 900 }}>Future Enhancements</h3>
@@ -66,6 +76,20 @@ export default function SettingsPage({ navigate, resetDemoData }: SettingsPagePr
           </div>
         </div>
       </section>
+
+      {confirmReset && (
+        <Modal title="Reset demonstration data" description="All current shop, tenant, rent-status, and activity changes will be replaced with the seed dataset." onClose={() => setConfirmReset(false)} style={{ maxWidth: 440 }}>
+          <div className="modal-heading">
+            <div><h2 className="font-display" style={{ margin: 0, fontWeight: 900 }}>Reset Demo Data?</h2><p className="page-subtitle">This replaces all changes made during the current demonstration.</p></div>
+            <button className="icon-btn" aria-label="Close reset confirmation" onClick={() => setConfirmReset(false)}><X size={16} /></button>
+          </div>
+          <div className="modal-body">
+            <div className="pill pill-warning" style={{ width: '100%', justifyContent: 'center' }}>This action cannot be undone except through a database backup.</div>
+            {message && messageIsError && <p role="alert" className="pill pill-danger mt-5">{message}</p>}
+            <div className="modal-actions"><button className="btn btn-muted" onClick={() => setConfirmReset(false)}>Cancel</button><button className="btn btn-danger" disabled={resetting} onClick={() => void reset()}><RotateCcw size={16} /> {resetting ? 'Resetting...' : 'Reset Data'}</button></div>
+          </div>
+        </Modal>
+      )}
     </AdminLayout>
   )
 }

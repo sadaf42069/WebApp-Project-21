@@ -1,7 +1,7 @@
 {
   "name": "navana-bailey-star-management-system",
   "private": true,
-  "version": "1.1.0",
+  "version": "1.2.0",
   "type": "module",
   "engines": {
     "node": "22.x"
@@ -13,7 +13,9 @@
     "build": "tsc -b && vite build",
     "start": "node server/index.js",
     "preview": "vite preview --host 0.0.0.0",
-    "test": "node --test server/tests/api.test.js",
+    "test": "node --test server/tests/api.test.js server/tests/postgres-database.test.js && node --experimental-strip-types --test src/tests/routing.test.ts",
+    "test:api": "node --test server/tests/api.test.js server/tests/postgres-database.test.js",
+    "test:frontend": "node --experimental-strip-types --test src/tests/routing.test.ts",
     "test:postgres": "node server/tests/postgres-smoke.js"
   },
   "dependencies": {

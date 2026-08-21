@@ -1,11 +1,14 @@
 import { useMemo, useState } from 'react'
-import { ArrowRight, Layers, MapPin, Search, Star, Tag } from 'lucide-react'
+import type { ReactNode } from 'react'
+import { ArrowRight, Clock, Layers, MapPin, Phone, Search, Tag, X } from 'lucide-react'
+import Modal from '../components/Modal'
 import PublicHeader from '../components/PublicHeader'
 import StatusBadge from '../components/StatusBadge'
 import type { Page, Shop } from '../types'
 
 interface ShopDirectoryProps {
   shops: Shop[]
+  selectedShopNo?: string
   navigate: (page: Page, shopNo?: string) => void
 }
 
@@ -23,7 +26,7 @@ const emojiByCategory: Record<string, string> = {
   Footwear: '👟',
 }
 
-export default function ShopDirectory({ shops, navigate }: ShopDirectoryProps) {
+export default function ShopDirectory({ shops, selectedShopNo, navigate }: ShopDirectoryProps) {
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState('All Categories')
   const [floor, setFloor] = useState('All Floors')
@@ -40,7 +43,7 @@ export default function ShopDirectory({ shops, navigate }: ShopDirectoryProps) {
     )
   })
 
-  const popular = filtered.slice(0, 8)
+  const selectedShop = shops.find((shop) => shop.no === selectedShopNo)
 
   return (
     <div className="app-shell">
@@ -67,13 +70,16 @@ export default function ShopDirectory({ shops, navigate }: ShopDirectoryProps) {
 
           <div className="flex flex-wrap mt-6" style={{ gap: 12 }}>
             <div style={{ position: 'relative', flex: '1 1 320px' }}>
-              <Search size={15} style={{ position: 'absolute', left: 14, top: 13, color: '#9ca3af' }} />
-              <input className="input" style={{ paddingLeft: 42 }} value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search by shop name, category or shop number..." />
+              <label className="sr-only" htmlFor="directory-search">Search shops</label>
+              <Search aria-hidden="true" size={15} style={{ position: 'absolute', left: 14, top: 13, color: '#9ca3af' }} />
+              <input id="directory-search" className="input" style={{ paddingLeft: 42 }} value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search by shop name, category or shop number..." />
             </div>
-            <select className="select" style={{ width: 210 }} value={category} onChange={(event) => setCategory(event.target.value)}>
+            <label className="sr-only" htmlFor="directory-category">Filter by category</label>
+            <select id="directory-category" className="select filter-select" value={category} onChange={(event) => setCategory(event.target.value)}>
               {categories.map((item) => <option key={item}>{item}</option>)}
             </select>
-            <select className="select" style={{ width: 160 }} value={floor} onChange={(event) => setFloor(event.target.value)}>
+            <label className="sr-only" htmlFor="directory-floor">Filter by floor</label>
+            <select id="directory-floor" className="select filter-select filter-select-small" value={floor} onChange={(event) => setFloor(event.target.value)}>
               {floors.map((item) => <option key={item}>{item}</option>)}
             </select>
           </div>
@@ -81,45 +87,80 @@ export default function ShopDirectory({ shops, navigate }: ShopDirectoryProps) {
 
         <div className="flex items-center justify-between mt-6 mb-4">
           <div>
-            <h2 className="font-display" style={{ margin: 0, fontWeight: 900, fontSize: 22 }}>Popular Shops</h2>
-            <p className="page-subtitle">{filtered.length} result(s) found</p>
+            <h2 className="font-display" style={{ margin: 0, fontWeight: 900, fontSize: 22 }}>All Shops</h2>
+            <p className="page-subtitle" role="status" aria-live="polite">{filtered.length} result(s) found and displayed</p>
           </div>
           <button className="btn btn-outline" onClick={() => navigate('floor-nav')}>Open Full Floor Map <ArrowRight size={15} /></button>
         </div>
 
         <section className="grid grid-4 gap-20">
-          {popular.map((shop) => (
+          {filtered.map((shop) => (
             <article key={shop.no} className="card shop-card">
               <div className="shop-image">{emojiByCategory[shop.category] ?? '🏪'}</div>
               <div style={{ padding: 18 }}>
                 <div className="flex items-center justify-between mb-3">
                   <span className="pill pill-blue">{shop.no}</span>
-                  <span className="flex items-center" style={{ gap: 4, color: '#c9a540', fontWeight: 900, fontSize: 12 }}>
-                    <Star size={13} fill="#c9a540" /> 4.{shop.no.charCodeAt(0) % 9}
-                  </span>
+                  <StatusBadge status={shop.status} />
                 </div>
                 <h3 className="font-display" style={{ margin: 0, fontSize: 20, fontWeight: 900, color: '#0d1b4b' }}>{shop.name}</h3>
                 <p className="text-muted text-small" style={{ lineHeight: 1.5, minHeight: 38 }}>{shop.description}</p>
                 <div className="flex flex-wrap mb-4" style={{ gap: 7 }}>
                   <span className="pill pill-gray"><Tag size={11} /> {shop.category}</span>
                   <span className="pill pill-gray"><Layers size={11} /> {shop.floor}</span>
-                  <StatusBadge status={shop.status} />
                 </div>
-                <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => navigate('floor-nav', shop.no)}>
-                  <MapPin size={15} /> View Location
-                </button>
+                <div className="shop-card-actions">
+                  <button className="btn btn-outline" onClick={() => navigate('directory', shop.no)}>View Details</button>
+                  <button className="btn btn-primary" onClick={() => navigate('floor-nav', shop.no)}><MapPin size={15} /> Location</button>
+                </div>
               </div>
             </article>
           ))}
         </section>
 
-        {popular.length === 0 && (
+        {filtered.length === 0 && (
           <div className="card text-center" style={{ padding: 44 }}>
             <strong>No shops found.</strong>
             <p className="text-muted">Try a different keyword, category or floor.</p>
           </div>
         )}
       </section>
+
+      {selectedShop && (
+        <Modal title={`${selectedShop.name} shop details`} description={`Public details for shop ${selectedShop.no}.`} onClose={() => navigate('directory')} style={{ maxWidth: 560 }}>
+          <div className="modal-heading">
+            <div>
+              <span className="pill pill-blue">{selectedShop.no}</span>
+              <h2 className="font-display" style={{ margin: '10px 0 0', fontWeight: 900 }}>{selectedShop.name}</h2>
+            </div>
+            <button className="icon-btn" aria-label="Close shop details" onClick={() => navigate('directory')}><X size={16} /></button>
+          </div>
+          <div className="modal-body">
+            <p className="text-muted" style={{ lineHeight: 1.7 }}>{selectedShop.description}</p>
+            <div className="grid grid-2 gap-16 mt-5">
+              <Detail icon={<Tag size={16} />} label="Category" value={selectedShop.category} />
+              <Detail icon={<Layers size={16} />} label="Floor" value={selectedShop.floor} />
+              <Detail icon={<Clock size={16} />} label="Opening hours" value={selectedShop.openingHours} />
+              <Detail icon={<Phone size={16} />} label="Contact" value={selectedShop.contact} />
+            </div>
+            <div className="flex items-center justify-between mt-5">
+              <StatusBadge status={selectedShop.status} />
+              <strong>{selectedShop.size.toLocaleString()} sq.ft</strong>
+            </div>
+            <button className="btn btn-primary mt-6" style={{ width: '100%' }} onClick={() => navigate('floor-nav', selectedShop.no)}>
+              <MapPin size={15} /> Show on Floor Map
+            </button>
+          </div>
+        </Modal>
+      )}
+    </div>
+  )
+}
+
+function Detail({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
+  return (
+    <div className="detail-row">
+      <span aria-hidden="true" className="pill pill-blue">{icon}</span>
+      <span><span className="label">{label}</span><strong>{value}</strong></span>
     </div>
   )
 }

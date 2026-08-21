@@ -56,7 +56,10 @@ async function request<T>(path: string, options: RequestInit = {}, authenticated
 
   const payload = await response.json().catch(() => ({})) as ApiEnvelope<T> & ApiErrorEnvelope
   if (!response.ok) {
-    if (response.status === 401 && authenticated) clearSession()
+    if (response.status === 401 && authenticated) {
+      clearSession()
+      window.dispatchEvent(new Event('nbs:unauthorized'))
+    }
     throw new ApiError(
       payload.error?.message || `The server returned HTTP ${response.status}.`,
       response.status,
@@ -91,6 +94,20 @@ export const updateShop = (currentShopNo: string, shop: Shop) => request<Shop>(`
 }, true)
 
 export const deleteShop = (shopNo: string) => request<void>(`/shops/${encodeURIComponent(shopNo)}`, {
+  method: 'DELETE',
+}, true)
+
+export const createTenant = (tenant: Tenant) => request<Tenant>('/tenants', {
+  method: 'POST',
+  body: JSON.stringify(tenant),
+}, true)
+
+export const updateTenant = (currentTenantId: string, tenant: Tenant) => request<Tenant>(`/tenants/${encodeURIComponent(currentTenantId)}`, {
+  method: 'PUT',
+  body: JSON.stringify(tenant),
+}, true)
+
+export const deleteTenant = (tenantId: string) => request<void>(`/tenants/${encodeURIComponent(tenantId)}`, {
   method: 'DELETE',
 }, true)
 

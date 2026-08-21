@@ -89,32 +89,31 @@ export default function LoginPage({ onLogin, onBrowse, shopStats }: LoginPagePro
           <div className="card" style={{ padding: 28 }}>
             <form onSubmit={submit}>
               <div className="mb-4">
-                <label className="label">Email Address</label>
+                <label className="label" htmlFor="admin-email">Email Address</label>
                 <div style={{ position: 'relative' }}>
-                  <Mail size={16} style={{ position: 'absolute', left: 14, top: 13, color: '#9ca3af' }} />
-                  <input className="input" type="email" required autoComplete="username" style={{ paddingLeft: 42 }} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="admin@navana.com" />
+                  <Mail aria-hidden="true" size={16} style={{ position: 'absolute', left: 14, top: 13, color: '#9ca3af' }} />
+                  <input id="admin-email" className="input" type="email" required autoComplete="username" style={{ paddingLeft: 42 }} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="admin@navana.com" />
                 </div>
               </div>
 
               <div className="mb-4">
-                <label className="label">Password</label>
+                <label className="label" htmlFor="admin-password">Password</label>
                 <div style={{ position: 'relative' }}>
-                  <Lock size={16} style={{ position: 'absolute', left: 14, top: 13, color: '#9ca3af' }} />
-                  <input className="input" required autoComplete="current-password" style={{ paddingLeft: 42, paddingRight: 42 }} type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter your password" />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: 12, top: 10, border: 0, background: 'transparent', color: '#9ca3af' }}>
+                  <Lock aria-hidden="true" size={16} style={{ position: 'absolute', left: 14, top: 13, color: '#9ca3af' }} />
+                  <input id="admin-password" className="input" required autoComplete="current-password" style={{ paddingLeft: 42, paddingRight: 42 }} type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter your password" />
+                  <button type="button" aria-label={showPassword ? 'Hide password' : 'Show password'} onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: 12, top: 10, border: 0, background: 'transparent', color: '#9ca3af' }}>
                     {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
                   </button>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center mb-5">
                 <span className="flex items-center" style={{ gap: 8, color: '#6b7280', fontSize: 12.5 }}>
                   <ShieldCheck size={15} color="#15803d" /> Role-based protected admin area
                 </span>
-                <button type="button" style={{ border: 0, background: 'transparent', color: '#c9a540', fontWeight: 800, fontSize: 12.5 }}>Forgot?</button>
               </div>
 
-              {error && <div className="pill pill-danger mb-4" style={{ width: '100%', justifyContent: 'center' }}>{error}</div>}
+              {error && <div role="alert" aria-live="assertive" className="pill pill-danger mb-4" style={{ width: '100%', justifyContent: 'center' }}>{error}</div>}
 
               <button className="btn btn-primary" type="submit" disabled={loading} style={{ width: '100%' }}>
                 {loading ? 'Signing in...' : 'Login to Dashboard'} <ArrowRight size={16} />

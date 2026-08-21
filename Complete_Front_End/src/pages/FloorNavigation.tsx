@@ -7,7 +7,7 @@ import type { Page, Shop } from '../types'
 
 interface FloorNavigationProps {
   shops: Shop[]
-  selectedShopNo: string
+  selectedShopNo?: string
   navigate: (page: Page, shopNo?: string) => void
 }
 
@@ -27,19 +27,17 @@ function facility(label: string, icon: string) {
 export default function FloorNavigation({ shops, selectedShopNo, navigate }: FloorNavigationProps) {
   const selectedFromProps = shops.find((shop) => shop.no === selectedShopNo)
   const [activeFloor, setActiveFloor] = useState(selectedFromProps?.floor ?? '1st Floor')
-  const [selectedNo, setSelectedNo] = useState(selectedShopNo)
   const [search, setSearch] = useState('')
 
   useEffect(() => {
     const found = shops.find((shop) => shop.no === selectedShopNo)
     if (found) {
       setActiveFloor(found.floor)
-      setSelectedNo(found.no)
     }
   }, [selectedShopNo, shops])
 
   const floorShops = shops.filter((shop) => shop.floor === activeFloor)
-  const selectedShop = shops.find((shop) => shop.no === selectedNo)
+  const selectedShop = shops.find((shop) => shop.no === selectedShopNo)
   const searchResults = useMemo(() => {
     const query = search.toLowerCase()
     return shops.filter((shop) => shop.name.toLowerCase().includes(query) || shop.no.toLowerCase().includes(query)).slice(0, 5)
@@ -84,28 +82,33 @@ export default function FloorNavigation({ shops, selectedShopNo, navigate }: Flo
           <div className="flex flex-wrap items-center justify-between mb-5" style={{ gap: 12 }}>
             <div className="flex flex-wrap" style={{ gap: 8 }}>
               {floors.map((floor) => (
-                <button key={floor} className={`btn ${activeFloor === floor ? 'btn-primary' : 'btn-outline'}`} onClick={() => setActiveFloor(floor)}>
+                <button key={floor} aria-pressed={activeFloor === floor} className={`btn ${activeFloor === floor ? 'btn-primary' : 'btn-outline'}`} onClick={() => {
+                  setActiveFloor(floor)
+                  if (selectedShop && selectedShop.floor !== floor) navigate('floor-nav')
+                }}>
                   {floor}
                 </button>
               ))}
             </div>
-            <div style={{ position: 'relative', minWidth: 280 }}>
-              <Search size={15} style={{ position: 'absolute', left: 13, top: 13, color: '#9ca3af' }} />
-              <input className="input" style={{ paddingLeft: 40 }} value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search shop..." />
+            <div className="floor-search" style={{ position: 'relative' }}>
+              <label className="sr-only" htmlFor="floor-shop-search">Search for a shop on any floor</label>
+              <Search aria-hidden="true" size={15} style={{ position: 'absolute', left: 13, top: 13, color: '#9ca3af' }} />
+              <input id="floor-shop-search" className="input" style={{ paddingLeft: 40 }} value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search shop..." />
               {search && (
                 <div className="card" style={{ position: 'absolute', top: 48, left: 0, right: 0, zIndex: 20, padding: 8 }}>
                   {searchResults.map((shop) => (
-                    <button key={shop.no} onClick={() => { setSelectedNo(shop.no); setActiveFloor(shop.floor); setSearch('') }} style={{ width: '100%', border: 0, background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 10, borderRadius: 10 }}>
+                    <button key={shop.no} onClick={() => { setActiveFloor(shop.floor); setSearch(''); navigate('floor-nav', shop.no) }} style={{ width: '100%', border: 0, background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 10, borderRadius: 10 }}>
                       <span><strong>{shop.name}</strong><br /><span className="text-small text-muted">{shop.no} • {shop.floor}</span></span>
                       <MapPin size={15} color="#c9a540" />
                     </button>
                   ))}
+                  {searchResults.length === 0 && <p className="text-muted text-small" style={{ padding: '4px 10px' }}>No shop matches that search.</p>}
                 </div>
               )}
             </div>
           </div>
 
-          <div className="grid" style={{ gridTemplateColumns: 'minmax(0, 1fr) 330px', gap: 18 }}>
+          <div className="floor-layout">
             <div>
               <div className="floor-grid">
                 {mapCells.map((cell, index) => {
@@ -116,13 +119,14 @@ export default function FloorNavigation({ shops, selectedShopNo, navigate }: Flo
                   if (cell === 'entrance') return <div key="entrance">{facility('You are here', '📍')}</div>
 
                   const shop = cell
-                  const isSelected = shop.no === selectedNo
-                  const isHighlighted = ['A-01', 'A-03', 'A-08'].includes(shop.no)
+                  const isSelected = shop.no === selectedShopNo
                   return (
                     <button
                       key={shop.no}
-                      className={`floor-cell ${isSelected ? 'selected' : ''} ${isHighlighted ? 'highlighted' : ''} ${shop.status === 'Vacant' ? 'vacant' : ''}`}
-                      onClick={() => setSelectedNo(shop.no)}
+                      className={`floor-cell ${isSelected ? 'selected' : ''} ${shop.status === 'Vacant' ? 'vacant' : ''}`}
+                      aria-label={`${shop.no}, ${shop.name}, ${shop.category}, ${shop.status}`}
+                      aria-pressed={isSelected}
+                      onClick={() => navigate('floor-nav', shop.no)}
                     >
                       <div className="flex items-center justify-between">
                         <strong style={{ fontFamily: 'monospace' }}>{shop.no}</strong>
@@ -137,17 +141,16 @@ export default function FloorNavigation({ shops, selectedShopNo, navigate }: Flo
 
               <div className="flex flex-wrap mt-5" style={{ gap: 10 }}>
                 <span className="pill pill-blue"><MapPin size={12} /> Selected Shop</span>
-                <span className="pill pill-warning">Highlighted Shop</span>
                 <span className="pill pill-gray">Elevator / Escalator / Washroom</span>
               </div>
             </div>
 
-            <aside className="soft-card" style={{ padding: 20 }}>
+            <aside className="soft-card floor-details" style={{ padding: 20 }} aria-live="polite">
               {selectedShop ? (
                 <>
                   <div className="flex items-center justify-between mb-4">
                     <span className="pill pill-blue">{selectedShop.no}</span>
-                    <button className="icon-btn" onClick={() => setSelectedNo('')} style={{ background: '#f0f2f6' }}><X size={15} /></button>
+                    <button className="icon-btn" aria-label="Clear selected shop" onClick={() => navigate('floor-nav')} style={{ background: '#f0f2f6' }}><X size={15} /></button>
                   </div>
                   <h2 className="font-display" style={{ margin: 0, fontWeight: 900, fontSize: 24 }}>{selectedShop.name}</h2>
                   <p className="text-muted" style={{ lineHeight: 1.6 }}>{selectedShop.description}</p>
@@ -161,7 +164,7 @@ export default function FloorNavigation({ shops, selectedShopNo, navigate }: Flo
                       <StatusBadge status={selectedShop.status} />
                     </div>
                   </div>
-                  <button className="btn btn-primary mt-6" style={{ width: '100%' }} onClick={() => navigate('directory')}>View Shop Details</button>
+                  <button className="btn btn-primary mt-6" style={{ width: '100%' }} onClick={() => navigate('directory', selectedShop.no)}>View Shop Details</button>
                 </>
               ) : (
                 <div className="text-center" style={{ padding: '40px 10px' }}>

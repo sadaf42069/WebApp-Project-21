@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   ApiError,
   clearSession,
   createShop,
+  createTenant,
   deleteShop,
+  deleteTenant,
   errorMessage,
   getActivities,
   getCurrentUser,
@@ -13,8 +15,17 @@ import {
   login,
   resetDemoData,
   updateShop,
+  updateTenant,
   updateTenantPaymentStatus,
 } from './api'
+import {
+  isAdminPage,
+  loginPathFor,
+  loginReturnRoute,
+  pathFor,
+  routeFromPath,
+} from './routing'
+import type { AppRoute } from './routing'
 import type { Activity, Page, PaymentStatus, Shop, Tenant, User } from './types'
 import Dashboard from './pages/Dashboard'
 import FloorNavigation from './pages/FloorNavigation'
@@ -25,16 +36,84 @@ import ShopDirectory from './pages/ShopDirectory'
 import ShopManagement from './pages/ShopManagement'
 import TenantRent from './pages/TenantRent'
 
+function initialRoute(): AppRoute {
+  if (window.location.pathname === '/') {
+    return { page: getStoredToken() ? 'dashboard' : 'login' }
+  }
+  return routeFromPath(window.location.pathname)
+}
+
 export default function App() {
-  const [page, setPage] = useState<Page>(() => getStoredToken() ? 'dashboard' : 'login')
+  const [route, setRoute] = useState<AppRoute>(initialRoute)
   const [shops, setShops] = useState<Shop[]>([])
   const [tenants, setTenants] = useState<Tenant[]>([])
   const [activities, setActivities] = useState<Activity[]>([])
   const [user, setUser] = useState<User | null>(null)
-  const [selectedShopNo, setSelectedShopNo] = useState<string>('A-01')
   const [initializing, setInitializing] = useState(true)
   const [initializationError, setInitializationError] = useState('')
   const [bootstrapAttempt, setBootstrapAttempt] = useState(0)
+
+  const commitRoute = useCallback((nextRoute: AppRoute, replace = false, explicitPath?: string) => {
+    const nextPath = explicitPath ?? pathFor(nextRoute.page, nextRoute.shopNo)
+    window.history[replace ? 'replaceState' : 'pushState']({ page: nextRoute.page, shopNo: nextRoute.shopNo }, '', nextPath)
+    setRoute(nextRoute)
+  }, [])
+
+  const clearProtectedState = useCallback(() => {
+    clearSession()
+    setUser(null)
+    setTenants([])
+    setActivities([])
+  }, [])
+
+  const navigate = useCallback((nextPage: Page, shopNo?: string) => {
+    if (nextPage === 'login') {
+      clearProtectedState()
+      commitRoute({ page: 'login' })
+      return
+    }
+
+    if (isAdminPage(nextPage) && !getStoredToken()) {
+      commitRoute({ page: 'login' }, false, loginPathFor(nextPage, shopNo))
+      return
+    }
+
+    commitRoute({ page: nextPage, ...(shopNo ? { shopNo } : {}) })
+  }, [clearProtectedState, commitRoute])
+
+  useEffect(() => {
+    if (window.location.pathname === '/') {
+      window.history.replaceState({ page: route.page }, '', pathFor(route.page, route.shopNo))
+    }
+
+    const onPopState = () => {
+      const nextRoute = routeFromPath(window.location.pathname)
+      if (isAdminPage(nextRoute.page) && !getStoredToken()) {
+        const loginPath = loginPathFor(nextRoute.page, nextRoute.shopNo)
+        window.history.replaceState({ page: 'login' }, '', loginPath)
+        setRoute({ page: 'login' })
+        return
+      }
+      setRoute(nextRoute)
+    }
+    window.addEventListener('popstate', onPopState)
+    return () => window.removeEventListener('popstate', onPopState)
+  }, [])
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+    document.querySelector<HTMLElement>('.content')?.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+  }, [route.page, route.shopNo])
+
+  useEffect(() => {
+    const onUnauthorized = () => {
+      const requestedPage = isAdminPage(route.page) ? route.page : undefined
+      clearProtectedState()
+      commitRoute({ page: 'login' }, true, loginPathFor(requestedPage, route.shopNo))
+    }
+    window.addEventListener('nbs:unauthorized', onUnauthorized)
+    return () => window.removeEventListener('nbs:unauthorized', onUnauthorized)
+  }, [clearProtectedState, commitRoute, route.page, route.shopNo])
 
   useEffect(() => {
     let cancelled = false
@@ -60,9 +139,12 @@ export default function App() {
             setActivities(recentActivities)
           } catch (error) {
             if (!(error instanceof ApiError) || error.status !== 401) throw error
-            clearSession()
-            setPage('login')
+            clearProtectedState()
           }
+        }
+
+        if (isAdminPage(route.page) && !getStoredToken()) {
+          commitRoute({ page: 'login' }, true, loginPathFor(route.page, route.shopNo))
         }
       } catch (error) {
         if (!cancelled) setInitializationError(errorMessage(error))
@@ -75,82 +157,66 @@ export default function App() {
     return () => { cancelled = true }
   }, [bootstrapAttempt])
 
-  const navigate = (nextPage: Page, selectedNo?: string) => {
-    if (selectedNo) setSelectedShopNo(selectedNo)
-    if (nextPage === 'login') {
-      clearSession()
-      setUser(null)
-      setTenants([])
-      setActivities([])
-      setPage('login')
-      return
-    }
-    const adminPage = ['dashboard', 'shops', 'tenants', 'reports', 'settings'].includes(nextPage)
-    if (adminPage && !user) {
-      setPage('login')
-      return
-    }
-    setPage(nextPage)
+  const refreshManagementData = async () => {
+    const [latestShops, protectedTenants, recentActivities] = await Promise.all([
+      getShops(),
+      getTenants(),
+      getActivities(),
+    ])
+    setShops(latestShops)
+    setTenants(protectedTenants)
+    setActivities(recentActivities)
   }
 
   const handleLogin = async (email: string, password: string) => {
     const session = await login(email, password)
     try {
-      const [latestShops, protectedTenants, recentActivities] = await Promise.all([
-        getShops(),
-        getTenants(),
-        getActivities(),
-      ])
+      await refreshManagementData()
       setUser(session.user)
-      setShops(latestShops)
-      setTenants(protectedTenants)
-      setActivities(recentActivities)
-      setPage('dashboard')
+      const destination = loginReturnRoute(window.location.search) ?? { page: 'dashboard' as const }
+      commitRoute(destination, true)
     } catch (error) {
-      clearSession()
+      clearProtectedState()
       throw error
     }
   }
 
-  const refreshActivities = async () => {
-    try {
-      setActivities(await getActivities())
-    } catch (error) {
-      if (error instanceof ApiError && error.status === 401) {
-        clearSession()
-        setUser(null)
-        setTenants([])
-        setActivities([])
-        setPage('login')
-      }
-    }
-  }
-
   const handleCreateShop = async (shop: Shop) => {
-    const created = await createShop(shop)
-    setShops((current) => [created, ...current])
-    await refreshActivities()
+    await createShop(shop)
+    await refreshManagementData()
   }
 
   const handleUpdateShop = async (currentShopNo: string, shop: Shop) => {
-    const updated = await updateShop(currentShopNo, shop)
-    setShops((current) => current.map((item) => item.no === currentShopNo ? updated : item))
-    if (currentShopNo !== updated.no) {
-      setTenants((current) => current.map((tenant) => tenant.shopNo === currentShopNo ? { ...tenant, shopNo: updated.no } : tenant))
-    }
-    await refreshActivities()
+    await updateShop(currentShopNo, shop)
+    await refreshManagementData()
   }
 
   const handleDeleteShop = async (shopNo: string) => {
     await deleteShop(shopNo)
-    setShops((current) => current.filter((shop) => shop.no !== shopNo))
-    await refreshActivities()
+    await refreshManagementData()
+  }
+
+  const handleCreateTenant = async (tenant: Tenant) => {
+    const created = await createTenant(tenant)
+    await refreshManagementData()
+    return created
+  }
+
+  const handleUpdateTenant = async (currentTenantId: string, tenant: Tenant) => {
+    const updated = await updateTenant(currentTenantId, tenant)
+    await refreshManagementData()
+    return updated
+  }
+
+  const handleDeleteTenant = async (tenantId: string) => {
+    await deleteTenant(tenantId)
+    await refreshManagementData()
   }
 
   const handlePaymentStatus = async (tenantId: string, status: PaymentStatus) => {
     const updated = await updateTenantPaymentStatus(tenantId, status)
     setTenants((current) => current.map((tenant) => tenant.id === tenantId ? updated : tenant))
-    await refreshActivities()
+    setActivities(await getActivities())
     return updated
   }
 
@@ -159,11 +225,10 @@ export default function App() {
     setShops(restored.shops)
     setTenants(restored.tenants)
     setActivities(restored.activities)
-    setSelectedShopNo('A-01')
   }
 
   if (initializing) {
-    return <ServiceState title="Connecting to the Node.js backend…" detail="Loading shops and checking your admin session." />
+    return <ServiceState title="Connecting to the Node.js backend..." detail="Loading shops and checking your admin session." />
   }
 
   if (initializationError) {
@@ -174,7 +239,7 @@ export default function App() {
     )
   }
 
-  switch (page) {
+  switch (route.page) {
     case 'login':
       return <LoginPage onLogin={handleLogin} onBrowse={() => navigate('directory')} shopStats={{
         total: shops.length,
@@ -186,17 +251,17 @@ export default function App() {
     case 'shops':
       return <ShopManagement shops={shops} onCreateShop={handleCreateShop} onUpdateShop={handleUpdateShop} onDeleteShop={handleDeleteShop} navigate={navigate} />
     case 'tenants':
-      return <TenantRent tenants={tenants} onUpdateStatus={handlePaymentStatus} navigate={navigate} />
+      return <TenantRent shops={shops} tenants={tenants} onCreateTenant={handleCreateTenant} onUpdateTenant={handleUpdateTenant} onDeleteTenant={handleDeleteTenant} onUpdateStatus={handlePaymentStatus} navigate={navigate} />
     case 'directory':
-      return <ShopDirectory shops={shops} navigate={navigate} />
+      return <ShopDirectory shops={shops} selectedShopNo={route.shopNo} navigate={navigate} />
     case 'floor-nav':
-      return <FloorNavigation shops={shops} selectedShopNo={selectedShopNo} navigate={navigate} />
+      return <FloorNavigation shops={shops} selectedShopNo={route.shopNo} navigate={navigate} />
     case 'reports':
       return <Reports shops={shops} tenants={tenants} navigate={navigate} />
     case 'settings':
       return <SettingsPage navigate={navigate} resetDemoData={handleResetDemoData} />
     default:
-      return <LoginPage onLogin={handleLogin} onBrowse={() => navigate('directory')} shopStats={{ total: shops.length, occupied: 0, floors: 0 }} />
+      return null
   }
 }
 

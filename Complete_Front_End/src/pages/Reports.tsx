@@ -58,7 +58,7 @@ export default function Reports({ shops, tenants, navigate }: ReportsProps) {
         <ReportCard label="Outstanding Rent" value={taka(dueRent)} sub="Due and overdue amount" />
       </section>
 
-      <section className="grid" style={{ gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 18 }}>
+      <section className="grid reports-grid">
         <div className="card" style={{ padding: 22 }}>
           <div className="flex items-center justify-between mb-5">
             <h3 className="font-display" style={{ margin: 0, fontWeight: 900 }}>Category-wise Shop Count</h3>
@@ -67,7 +67,7 @@ export default function Reports({ shops, tenants, navigate }: ReportsProps) {
           <div className="grid gap-12">
             {categories.map((category) => {
               const count = shops.filter((shop) => shop.category === category).length
-              const percentage = Math.round((count / shops.length) * 100)
+              const percentage = shops.length ? Math.round((count / shops.length) * 100) : 0
               return (
                 <div key={category}>
                   <div className="flex justify-between mb-3 text-small">
@@ -131,6 +131,9 @@ export default function Reports({ shops, tenants, navigate }: ReportsProps) {
                   <td>{tenant.paymentStatus}</td>
                 </tr>
               ))}
+              {tenants.every((tenant) => tenant.paymentStatus === 'Paid') && (
+                <tr><td colSpan={5} className="text-center text-muted" style={{ padding: 28 }}>No outstanding rent records.</td></tr>
+              )}
             </tbody>
           </table>
         </div>

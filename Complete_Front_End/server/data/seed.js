@@ -18,13 +18,13 @@ export const seedShops = [
 ]
 
 export const seedTenants = [
-  { id: 'T-001', name: 'Rahman Store', shopNo: 'A-01', rent: 25000, dueDate: '05 Jun 2024', paymentStatus: 'Paid', phone: '+880 1711-123456', businessCategory: 'Apparel', startDate: 'Jan 2022' },
-  { id: 'T-002', name: 'Mobile Hub', shopNo: 'A-02', rent: 18000, dueDate: '05 Jun 2024', paymentStatus: 'Paid', phone: '+880 1811-234567', businessCategory: 'Electronics', startDate: 'Mar 2022' },
-  { id: 'T-003', name: 'Food Corner Ltd.', shopNo: 'A-03', rent: 30000, dueDate: '05 Jun 2024', paymentStatus: 'Due', phone: '+880 1911-345678', businessCategory: 'Food & Beverage', startDate: 'Jul 2021' },
-  { id: 'T-004', name: 'Kids World', shopNo: 'A-04', rent: 15000, dueDate: '05 Jun 2024', paymentStatus: 'Paid', phone: '+880 1711-456789', businessCategory: 'Kids', startDate: 'Nov 2023' },
-  { id: 'T-005', name: 'Beauty Care', shopNo: 'B-01', rent: 12000, dueDate: '05 Jun 2024', paymentStatus: 'Due', phone: '+880 1811-567890', businessCategory: 'Cosmetics', startDate: 'Feb 2023' },
-  { id: 'T-006', name: 'Book Point', shopNo: 'B-02', rent: 10000, dueDate: '05 Jun 2024', paymentStatus: 'Paid', phone: '+880 1911-678901', businessCategory: 'Books', startDate: 'Sep 2022' },
-  { id: 'T-007', name: 'TechZone BD', shopNo: 'B-04', rent: 22000, dueDate: '01 Jun 2024', paymentStatus: 'Overdue', phone: '+880 1711-789012', businessCategory: 'Electronics', startDate: 'Apr 2023' },
-  { id: 'T-008', name: 'Sports Zone', shopNo: 'A-05', rent: 20000, dueDate: '05 Jun 2024', paymentStatus: 'Paid', phone: '+880 1811-890123', businessCategory: 'Sports', startDate: 'Jun 2022' },
+  { id: 'T-001', name: 'Rahman Store', shopNo: 'A-01', rent: 25000, dueDate: '05 Sep 2026', paymentStatus: 'Paid', phone: '+880 1711-123456', businessCategory: 'Apparel', startDate: 'Jan 2022' },
+  { id: 'T-002', name: 'Mobile Hub', shopNo: 'A-02', rent: 18000, dueDate: '05 Sep 2026', paymentStatus: 'Paid', phone: '+880 1811-234567', businessCategory: 'Electronics', startDate: 'Mar 2022' },
+  { id: 'T-003', name: 'Food Corner Ltd.', shopNo: 'A-03', rent: 30000, dueDate: '05 Sep 2026', paymentStatus: 'Due', phone: '+880 1911-345678', businessCategory: 'Food & Beverage', startDate: 'Jul 2021' },
+  { id: 'T-004', name: 'Kids World', shopNo: 'A-04', rent: 15000, dueDate: '05 Sep 2026', paymentStatus: 'Paid', phone: '+880 1711-456789', businessCategory: 'Kids', startDate: 'Nov 2023' },
+  { id: 'T-005', name: 'Beauty Care', shopNo: 'B-01', rent: 12000, dueDate: '05 Sep 2026', paymentStatus: 'Due', phone: '+880 1811-567890', businessCategory: 'Cosmetics', startDate: 'Feb 2023' },
+  { id: 'T-006', name: 'Book Point', shopNo: 'B-02', rent: 10000, dueDate: '05 Sep 2026', paymentStatus: 'Paid', phone: '+880 1911-678901', businessCategory: 'Books', startDate: 'Sep 2022' },
+  { id: 'T-007', name: 'TechZone BD', shopNo: 'B-04', rent: 22000, dueDate: '01 Aug 2026', paymentStatus: 'Overdue', phone: '+880 1711-789012', businessCategory: 'Electronics', startDate: 'Apr 2023' },
+  { id: 'T-008', name: 'Sports Zone', shopNo: 'A-05', rent: 20000, dueDate: '05 Sep 2026', paymentStatus: 'Paid', phone: '+880 1811-890123', businessCategory: 'Sports', startDate: 'Jun 2022' },
 ]
 

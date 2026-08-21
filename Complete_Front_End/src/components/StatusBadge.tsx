@@ -18,7 +18,7 @@ export default function StatusBadge({ status }: StatusBadgeProps) {
 
   return (
     <span className={config.className}>
-      <Icon size={12} />
+      <Icon aria-hidden="true" size={12} />
       {status}
     </span>
   )

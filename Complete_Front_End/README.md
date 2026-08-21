@@ -7,16 +7,21 @@ Live production site: https://navana-bailey-star.vercel.app
 ## Implemented Features
 
 - Real admin login with scrypt-hashed passwords and signed, expiring bearer tokens
-- Public shop directory and floor navigation
+- Durable public and protected URLs with reload, Back, Forward, and selected-shop deep-link support
+- Complete public shop directory, truthful shop details, and responsive floor navigation
 - Persistent shop create, read, update, and delete operations
-- Persistent tenant records and rent payment-status updates
+- Complete tenant create, read, update, delete, assignment, and Paid/Due/Overdue controls in the admin interface
 - Dashboard activity history backed by real server mutations
 - Occupancy, category, floor, and rent summaries
 - CSV export and printable reports
 - Protected admin API routes and public read-only shop routes
 - Server-side input validation and consistent API errors
 - Atomic file-backed persistence with a demo-data reset action
-- Node.js API integration tests
+- Mobile public navigation and an accessible admin navigation drawer
+- Associated form labels, named icon controls, focus-trapped dialogs, Escape dismissal, and reset confirmation
+- API, PostgreSQL-adapter, and frontend-route automated tests
+
+The submission-ready SRS is [`docs/Navana-Bailey-Star-SRS-v1.2.docx`](docs/Navana-Bailey-Star-SRS-v1.2.docx). Supporting requirements-engineering evidence, SMART/MoSCoW analysis, traceability, monitoring, risks, and change control are maintained in [`docs/REQUIREMENTS-ENGINEERING.md`](docs/REQUIREMENTS-ENGINEERING.md). The release and presentation checklist is in [`docs/TEST-AND-DEMONSTRATION-PLAN.md`](docs/TEST-AND-DEMONSTRATION-PLAN.md).
 
 ## Technology
 
@@ -24,7 +29,7 @@ Live production site: https://navana-bailey-star.vercel.app
 - Backend: Node.js 22+, Express 5, native Node.js crypto
 - Local storage: JSON database at `server/data/database.json`
 - Production storage: Neon PostgreSQL through `DATABASE_URL`
-- Tests: built-in `node:test` runner and HTTP `fetch`
+- Tests: built-in `node:test`, HTTP `fetch`, and Node.js TypeScript stripping for pure frontend route tests
 
 Express and the PostgreSQL driver are the backend runtime dependencies. Password hashing, token signing, local file persistence, and tests use built-in Node.js modules.
 
@@ -103,6 +108,8 @@ npm audit
 
 The integration suite covers health checks, login success/failure, public versus protected access, shop CRUD, duplicate validation, rent-status persistence, activity recording, and demo reset.
 
+The full automated gate additionally covers malformed and oversized input, tenant CRUD and occupancy synchronization, reports, expired/malformed tokens, PostgreSQL commit/rollback behavior without live credentials, and durable frontend route/deep-link behavior. Run `npm run test:postgres` separately when a real `DATABASE_URL` is available.
+
 ## API Overview
 
 Public routes:
@@ -130,3 +137,7 @@ Send the login token as `Authorization: Bearer <token>` on protected routes.
 ## Data Notes
 
 The included shop and tenant records are demonstration data. Local development uses a Git-ignored JSON database with atomic writes. Vercel production uses a transactionally locked PostgreSQL JSONB record in Neon, so concurrent mutations remain consistent and data survives deployments and function restarts.
+
+## Responsive and Accessibility Acceptance
+
+Before submission or deployment, verify the browser matrix at 390, 760, 1024, and 1440 CSS pixels. Public and admin navigation must remain reachable; the floor map and shop cards must not cause document overflow; dialogs must trap focus and close with Escape; and every visible form/icon control must have a usable label. The exact scenarios are listed in [`docs/TEST-AND-DEMONSTRATION-PLAN.md`](docs/TEST-AND-DEMONSTRATION-PLAN.md).

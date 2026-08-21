@@ -69,7 +69,7 @@ export default function Dashboard({ shops, tenants, activities, navigate }: Dash
         ))}
       </section>
 
-      <section className="grid" style={{ gridTemplateColumns: 'minmax(0, 1.25fr) minmax(340px, .75fr)', gap: 18 }}>
+      <section className="grid dashboard-grid">
         <div className="card" style={{ padding: 22 }}>
           <div className="flex items-center justify-between mb-5">
             <div>

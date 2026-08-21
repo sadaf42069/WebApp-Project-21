@@ -1,10 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { ElementType, ReactNode } from 'react'
 import {
   BarChart3,
-  Bell,
   Building2,
-  ChevronDown,
   LayoutDashboard,
   LogOut,
   Map,
@@ -13,6 +11,7 @@ import {
   ShoppingBag,
   Store,
   Users,
+  X,
 } from 'lucide-react'
 import type { Page } from '../types'
 
@@ -47,12 +46,54 @@ const titles: Record<Page, { title: string; subtitle: string }> = {
 
 export default function AdminLayout({ children, activePage, navigate, title, subtitle }: AdminLayoutProps) {
   const [collapsed, setCollapsed] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 760px)').matches)
+  const sidebarRef = useRef<HTMLElement>(null)
   const pageTitle = title ?? titles[activePage].title
   const pageSubtitle = subtitle ?? titles[activePage].subtitle
 
+  useEffect(() => {
+    setMobileOpen(false)
+  }, [activePage])
+
+  useEffect(() => {
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMobileOpen(false)
+    }
+    document.addEventListener('keydown', closeOnEscape)
+    return () => document.removeEventListener('keydown', closeOnEscape)
+  }, [])
+
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 760px)')
+    const updateMode = () => setIsMobile(media.matches)
+    media.addEventListener('change', updateMode)
+    return () => media.removeEventListener('change', updateMode)
+  }, [])
+
+  useEffect(() => {
+    if (sidebarRef.current) {
+      ;(sidebarRef.current as HTMLElement & { inert: boolean }).inert = isMobile && !mobileOpen
+    }
+  }, [isMobile, mobileOpen])
+
+  const toggleNavigation = () => {
+    if (isMobile) {
+      setCollapsed(false)
+      setMobileOpen((open) => !open)
+    }
+    else setCollapsed((current) => !current)
+  }
+
+  const selectPage = (page: Page) => {
+    setMobileOpen(false)
+    navigate(page)
+  }
+
   return (
     <div className="admin-layout">
-      <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
+      <button className={`mobile-nav-backdrop ${mobileOpen ? 'visible' : ''}`} aria-label="Close admin navigation" aria-hidden={!mobileOpen} tabIndex={mobileOpen ? 0 : -1} onClick={() => setMobileOpen(false)} />
+      <aside ref={sidebarRef} id="admin-navigation" aria-label="Admin navigation" aria-hidden={isMobile && !mobileOpen ? true : undefined} className={`sidebar ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
         <div style={{ padding: 18, borderBottom: '1px solid rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', gap: 12 }}>
           <div className="logo-mark" style={{ width: 40, height: 40, borderRadius: 12 }}>NB</div>
           {!collapsed && (
@@ -75,7 +116,8 @@ export default function AdminLayout({ children, activePage, navigate, title, sub
               key={page}
               className={`side-btn ${activePage === page ? 'active' : ''}`}
               title={collapsed ? label : undefined}
-              onClick={() => navigate(page)}
+              aria-current={activePage === page ? 'page' : undefined}
+              onClick={() => selectPage(page)}
               style={{ justifyContent: collapsed ? 'center' : 'flex-start' }}
             >
               <Icon size={18} />
@@ -94,7 +136,7 @@ export default function AdminLayout({ children, activePage, navigate, title, sub
         </nav>
 
         <div style={{ padding: 12, borderTop: '1px solid rgba(255,255,255,.08)' }}>
-          <button className="side-btn" onClick={() => navigate('login')} style={{ justifyContent: collapsed ? 'center' : 'flex-start' }}>
+          <button className="side-btn" onClick={() => selectPage('login')} style={{ justifyContent: collapsed ? 'center' : 'flex-start' }}>
             <LogOut size={18} />
             {!collapsed && <span style={{ fontSize: 13, fontWeight: 700 }}>Logout</span>}
           </button>
@@ -104,8 +146,8 @@ export default function AdminLayout({ children, activePage, navigate, title, sub
       <main className="admin-main">
         <header className="topbar">
           <div className="flex items-center" style={{ gap: 14 }}>
-            <button className="icon-btn" onClick={() => setCollapsed(!collapsed)} style={{ background: '#f0f2f6', color: '#0d1b4b' }}>
-              <Menu size={18} />
+            <button className="icon-btn" aria-label={mobileOpen ? 'Close navigation' : 'Open navigation'} aria-controls="admin-navigation" aria-expanded={mobileOpen} onClick={toggleNavigation} style={{ background: '#f0f2f6', color: '#0d1b4b' }}>
+              {mobileOpen ? <X size={18} /> : <Menu size={18} />}
             </button>
             <div>
               <h1 className="page-title">{pageTitle}</h1>
@@ -113,19 +155,12 @@ export default function AdminLayout({ children, activePage, navigate, title, sub
             </div>
           </div>
 
-          <div className="flex items-center" style={{ gap: 12 }}>
-            <button className="icon-btn" style={{ background: '#f8f9fb', color: '#6b7280', position: 'relative' }}>
-              <Bell size={17} />
-              <span style={{ position: 'absolute', top: 8, right: 8, width: 7, height: 7, borderRadius: 999, background: '#dc2626', border: '2px solid #fff' }} />
-            </button>
-            <div className="flex items-center" style={{ gap: 10, padding: '8px 10px', border: '1px solid #e8eaef', borderRadius: 999, background: '#fff' }}>
+          <div className="admin-identity flex items-center" aria-label="Signed in as administrator" style={{ gap: 10, padding: '8px 10px', border: '1px solid #e8eaef', borderRadius: 999, background: '#fff' }}>
               <div style={{ width: 32, height: 32, borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #c9a540, #e8cc6a)', fontWeight: 900, color: '#0d1b4b' }}>AD</div>
-              <div style={{ lineHeight: 1.2 }}>
+              <div className="admin-identity-copy" style={{ lineHeight: 1.2 }}>
                 <div style={{ fontSize: 12.5, fontWeight: 800 }}>Admin</div>
                 <div style={{ fontSize: 10.5, color: '#9ca3af' }}>Management</div>
               </div>
-              <ChevronDown size={14} color="#9ca3af" />
-            </div>
           </div>
         </header>
 

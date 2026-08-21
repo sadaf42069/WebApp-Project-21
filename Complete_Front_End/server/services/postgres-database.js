@@ -8,12 +8,16 @@ function clone(value) {
 }
 
 export class PostgresDatabase {
-  constructor(connectionString, admin) {
+  constructor(connectionString, admin, { pool } = {}) {
+    this.admin = admin
+    if (pool) {
+      this.pool = pool
+      return
+    }
     const connectionUrl = new URL(connectionString)
     if (connectionUrl.searchParams.get('sslmode') === 'require') {
       connectionUrl.searchParams.set('sslmode', 'verify-full')
     }
-    this.admin = admin
     this.pool = new Pool({
       connectionString: connectionUrl.toString(),
       max: 5,
